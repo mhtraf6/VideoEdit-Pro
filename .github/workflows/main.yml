@@ -13,11 +13,10 @@ jobs:
           
       - name: Create Full Android Project Structure
         run: |
-          # 1. إنشاء المجلدات الأساسية للمشروع بالكامل
           mkdir -p android-project/app/src/main/java/com/videoeditpro/app
           mkdir -p android-project/app/src/main/res/values
           
-          # 2. إنشاء ملف الإعدادات العام settings.gradle.kts
+          # 1. إعداد مستودعات التحميل الرسمية
           cat << 'EOF' > android-project/settings.gradle.kts
           pluginManagement {
               repositories {
@@ -37,7 +36,7 @@ jobs:
           include(":app")
           EOF
 
-          # 3. إنشاء ملف build.gradle.kts الرئيسي للمشروع
+          # 2. ملف البناء الرئيسي للمشروع
           cat << 'EOF' > android-project/build.gradle.kts
           plugins {
               id("com.android.application") version "8.1.1" apply false
@@ -45,7 +44,7 @@ jobs:
           }
           EOF
 
-          # 4. إنشاء ملف build.gradle.kts الخاص بموديول التطبيق (App)
+          # 3. ملف بناء التطبيق مع تعديل المكتبات لتفادي خطأ DependencyHandler
           cat << 'EOF' > android-project/app/build.gradle.kts
           plugins {
               id("com.android.application")
@@ -60,8 +59,6 @@ jobs:
                   targetSdk = 34
                   versionCode = 1
                   versionName = "1.0"
-                  testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-                  vectorDrawables { useSupportLibrary = true }
               }
               buildTypes {
                   release {
@@ -76,34 +73,36 @@ jobs:
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
               composeOptions { kotlinCompilerExtensionVersion = "1.4.3" }
-              packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
           }
           dependencies {
               implementation("androidx.core:core-ktx:1.12.0")
               implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
               implementation("androidx.activity:activity-compose:1.8.2")
-              implementation(platform("androidx.compose:compose-bom:2023.08.0"))
-              implementation("androidx.compose.ui:ui")
-              implementation("androidx.compose.ui:ui-graphics")
-              implementation("androidx.compose.ui:ui-tooling-preview")
-              implementation("androidx.compose.material3:material3")
+              
+              // تم إصلاح صياغة مصفوفة Compose هنا لمنع توقف البناء السحابي
+              implementation("androidx.compose.ui:ui:1.4.3")
+              implementation("androidx.compose.ui:ui-graphics:1.4.3")
+              implementation("androidx.compose.ui:ui-tooling-preview:1.4.3")
+              implementation("androidx.compose.material3:material3:1.1.1")
+              
+              // مكتبة إعلانات AdMob الرسمية لمشروعك
               implementation("com.google.android.gms:play-services-ads:23.0.0")
           }
           EOF
 
-          # 5. إنشاء ملف الألوان والثيمات البسيط لتفادي أخطاء البناء
+          # 4. ملف الثيمات الفارغ لتجنب كراش الألوان
           cat << 'EOF' > android-project/app/src/main/res/values/themes.xml
           <resources></resources>
           EOF
 
-          # 6. نقل ملف الكود الأساسي الخاص بك إلى مكانه البرمجي الصحيح
+          # 5. نقل كودك الحقيقي ومطابقته مع اسم الملف الصحيح
           if [ -f "MainActivity.kt" ]; then
             cp MainActivity.kt android-project/app/src/main/java/com/videoeditpro/app/MainActivity.kt
           elif [ -f "MainActivity.kt.kt" ]; then
             cp MainActivity.kt.kt android-project/app/src/main/java/com/videoeditpro/app/MainActivity.kt
           fi
 
-          # 7. إنشاء ملف المانيفست الرسمي مدمجاً به معرف تطبيقك الحقيقي للربح
+          # 6. ملف المانيفست المدمج به كود الربح الحقيقي لحسابك
           cat << 'EOF' > android-project/app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.videoeditpro.app">
               <uses-permission android:name="android.permission.INTERNET"/>
@@ -129,7 +128,6 @@ jobs:
           </manifest>
           EOF
 
-          # 8. توليد ملفات Gradle Wrapper وتجهيز السيرفر للتحميل
           cd android-project
           gradle wrapper --gradle-version 8.1.1
 
