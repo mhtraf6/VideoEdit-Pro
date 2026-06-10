@@ -10,38 +10,43 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Initialize Android Project
-        run: |
-          mkdir -p app/src/main/java/com/videoeditpro/app
-          mkdir -p app/src/main
-          mv MainActivity.kt app/src/main/java/com/videoeditpro/app/
           
-          # إنشاء ملف المانيفست بالخلفية وإضافة معرف إعلاناتك الحقيقي
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.videoeditpro.app">
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <application android:label="VideoEdit Pro" android:theme="@android:style/Theme.Material.NoActionBar">
-                  <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-8995513369904529~8169198851"/>
-                  <activity android:name=".MainActivity" android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
+      - name: Create Full Android Project Structure
+        run: |
+          # 1. إنشاء المجلدات الأساسية للمشروع بالكامل
+          mkdir -p android-project/app/src/main/java/com/videoeditpro/app
+          mkdir -p android-project/app/src/main/res/values
+          
+          # 2. إنشاء ملف الإعدادات العام settings.gradle.kts
+          cat << 'EOF' > android-project/settings.gradle.kts
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "VideoEditPro"
+          include(":app")
           EOF
 
-          # إنشاء ملفات الإعدادات والتحميل للسيرفر بشكل كامل
-          echo "include(':app')" > settings.gradle.kts
-          cat << 'EOF' > build.gradle.kts
+          # 3. إنشاء ملف build.gradle.kts الرئيسي للمشروع
+          cat << 'EOF' > android-project/build.gradle.kts
           plugins {
               id("com.android.application") version "8.1.1" apply false
               id("org.jetbrains.kotlin.android") version "1.8.10" apply false
           }
           EOF
 
-          cat << 'EOF' > app/build.gradle.kts
+          # 4. إنشاء ملف build.gradle.kts الخاص بموديول التطبيق (App)
+          cat << 'EOF' > android-project/app/build.gradle.kts
           plugins {
               id("com.android.application")
               id("org.jetbrains.kotlin.android")
@@ -55,23 +60,87 @@ jobs:
                   targetSdk = 34
                   versionCode = 1
                   versionName = "1.0"
+                  testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+                  vectorDrawables { useSupportLibrary = true }
               }
+              buildTypes {
+                  release {
+                      isMinifyEnabled = false
+                      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
               composeOptions { kotlinCompilerExtensionVersion = "1.4.3" }
+              packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
           }
           dependencies {
+              implementation("androidx.core:core-ktx:1.12.0")
+              implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
               implementation("androidx.activity:activity-compose:1.8.2")
-              implementation("androidx.compose.ui:ui:1.5.4")
-              implementation("androidx.compose.material3:material3:1.1.2")
+              implementation(platform("androidx.compose:compose-bom:2023.08.0"))
+              implementation("androidx.compose.ui:ui")
+              implementation("androidx.compose.ui:ui-graphics")
+              implementation("androidx.compose.ui:ui-tooling-preview")
+              implementation("androidx.compose.material3:material3")
               implementation("com.google.android.gms:play-services-ads:23.0.0")
           }
           EOF
-          
-          gradle wrapper --gradle-version 8.0
-      - name: Build APK Succeeded
-        run: ./gradlew assembleDebug
+
+          # 5. إنشاء ملف الألوان والثيمات البسيط لتفادي أخطاء البناء
+          cat << 'EOF' > android-project/app/src/main/res/values/themes.xml
+          <resources></resources>
+          EOF
+
+          # 6. نقل ملف الكود الأساسي الخاص بك إلى مكانه البرمجي الصحيح
+          if [ -f "MainActivity.kt" ]; then
+            cp MainActivity.kt android-project/app/src/main/java/com/videoeditpro/app/MainActivity.kt
+          elif [ -f "MainActivity.kt.kt" ]; then
+            cp MainActivity.kt.kt android-project/app/src/main/java/com/videoeditpro/app/MainActivity.kt
+          fi
+
+          # 7. إنشاء ملف المانيفست الرسمي مدمجاً به معرف تطبيقك الحقيقي للربح
+          cat << 'EOF' > android-project/app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.videoeditpro.app">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <application 
+                  android:allowBackup="true"
+                  android:label="VideoEdit Pro"
+                  android:supportsRtl="true"
+                  android:theme="@android:style/Theme.Material.NoActionBar">
+                  
+                  <meta-data 
+                      android:name="com.google.android.gms.ads.APPLICATION_ID" 
+                      android:value="ca-app-pub-8995513369904529~8169198851"/>
+                      
+                  <activity 
+                      android:name=".MainActivity" 
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # 8. توليد ملفات Gradle Wrapper وتجهيز السيرفر للتحميل
+          cd android-project
+          gradle wrapper --gradle-version 8.1.1
+
+      - name: Build Official Production APK
+        run: |
+          cd android-project
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
           name: VideoEditPro-Official-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: android-project/app/build/outputs/apk/debug/app-debug.apk
