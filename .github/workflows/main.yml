@@ -11,99 +11,93 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           
-      - name: Create Full Android Project Structure
+      - name: Create Clean Android Structure
         run: |
-          mkdir -p android-project/app/src/main/java/com/videoeditpro/app
-          mkdir -p android-project/app/src/main/res/values
+          mkdir -p app/src/main/java/com/videoeditpro/app
+          mkdir -p app/src/main/res/values
           
-          # 1. إعداد مستودعات التحميل الرسمية
-          cat << 'EOF' > android-project/settings.gradle.kts
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "VideoEditPro"
-          include(":app")
+          # 1. ملف الإعدادات الأساسي المبسط
+          cat << 'EOF' > settings.gradle
+          include ':app'
           EOF
 
           # 2. ملف البناء الرئيسي للمشروع
-          cat << 'EOF' > android-project/build.gradle.kts
-          plugins {
-              id("com.android.application") version "8.1.1" apply false
-              id("org.jetbrains.kotlin.android") version "1.8.10" apply false
+          cat << 'EOF' > build.gradle
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.0.2'
+                  classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20'
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
           }
           EOF
 
-          # 3. ملف بناء التطبيق مع تعديل المكتبات لتفادي خطأ DependencyHandler
-          cat << 'EOF' > android-project/app/build.gradle.kts
-          plugins {
-              id("com.android.application")
-              id("org.jetbrains.kotlin.android")
-          }
+          # 3. ملف بناء التطبيق بصياغة كلاسيكية آمنة ومستقرة 100%
+          cat << 'EOF' > app/build.gradle
+          apply plugin: 'com.android.application'
+          apply plugin: 'kotlin-android'
+
           android {
-              namespace = "com.videoeditpro.app"
-              compileSdk = 34
+              namespace 'com.videoeditpro.app'
+              compileSdk 34
               defaultConfig {
-                  applicationId = "com.videoeditpro.app"
-                  minSdk = 24
-                  targetSdk = 34
-                  versionCode = 1
-                  versionName = "1.0"
+                  applicationId "com.videoeditpro.app"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
               }
-              buildTypes {
-                  release {
-                      isMinifyEnabled = false
-                      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-                  }
+              buildFeatures {
+                  compose true
+              }
+              composeOptions {
+                  kotlinCompilerExtensionVersion '1.4.6'
               }
               compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
               }
-              kotlinOptions { jvmTarget = "17" }
-              buildFeatures { compose = true }
-              composeOptions { kotlinCompilerExtensionVersion = "1.4.3" }
           }
+
           dependencies {
-              implementation("androidx.core:core-ktx:1.12.0")
-              implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-              implementation("androidx.activity:activity-compose:1.8.2")
+              implementation 'androidx.core:core-ktx:1.12.0'
+              implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
+              implementation 'androidx.activity:activity-compose:1.8.2'
               
-              // تم إصلاح صياغة مصفوفة Compose هنا لمنع توقف البناء السحابي
-              implementation("androidx.compose.ui:ui:1.4.3")
-              implementation("androidx.compose.ui:ui-graphics:1.4.3")
-              implementation("androidx.compose.ui:ui-tooling-preview:1.4.3")
-              implementation("androidx.compose.material3:material3:1.1.1")
+              // حزمة مكتبات الكومبوز المستقرة بدون مصفوفات معقدة
+              implementation 'androidx.compose.ui:ui:1.4.3'
+              implementation 'androidx.compose.ui:ui-graphics:1.4.3'
+              implementation 'androidx.compose.ui:ui-tooling-preview:1.4.3'
+              implementation 'androidx.compose.material3:material3:1.1.1'
               
-              // مكتبة إعلانات AdMob الرسمية لمشروعك
-              implementation("com.google.android.gms:play-services-ads:23.0.0")
+              // مكتبة إعلانات AdMob الرسمية لحسابك
+              implementation 'com.google.android.gms:play-services-ads:23.0.0'
           }
           EOF
 
-          # 4. ملف الثيمات الفارغ لتجنب كراش الألوان
-          cat << 'EOF' > android-project/app/src/main/res/values/themes.xml
+          # 4. ملف الثيمات
+          cat << 'EOF' > app/src/main/res/values/themes.xml
           <resources></resources>
           EOF
 
-          # 5. نقل كودك الحقيقي ومطابقته مع اسم الملف الصحيح
+          # 5. نقل ملف الكود الحقيقي إلى مساره البرمجي الصحيح
           if [ -f "MainActivity.kt" ]; then
-            cp MainActivity.kt android-project/app/src/main/java/com/videoeditpro/app/MainActivity.kt
+            cp MainActivity.kt app/src/main/java/com/videoeditpro/app/MainActivity.kt
           elif [ -f "MainActivity.kt.kt" ]; then
-            cp MainActivity.kt.kt android-project/app/src/main/java/com/videoeditpro/app/MainActivity.kt
+            cp MainActivity.kt.kt app/src/main/java/com/videoeditpro/app/MainActivity.kt
           fi
 
-          # 6. ملف المانيفست المدمج به كود الربح الحقيقي لحسابك
-          cat << 'EOF' > android-project/app/src/main/AndroidManifest.xml
+          # 6. ملف المانيفست المدمج به كود الربح الحقيقي لحسابك الشخصي
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.videoeditpro.app">
               <uses-permission android:name="android.permission.INTERNET"/>
               <application 
@@ -128,12 +122,10 @@ jobs:
           </manifest>
           EOF
 
-          cd android-project
-          gradle wrapper --gradle-version 8.1.1
+          gradle wrapper --gradle-version 8.0.2
 
       - name: Build Official Production APK
         run: |
-          cd android-project
           chmod +x gradlew
           ./gradlew assembleDebug
 
@@ -141,4 +133,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: VideoEditPro-Official-APK
-          path: android-project/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
