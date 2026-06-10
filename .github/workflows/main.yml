@@ -16,12 +16,12 @@ jobs:
           mkdir -p app/src/main/java/com/videoeditpro/app
           mkdir -p app/src/main/res/values
           
-          # 1. ملف الإعدادات الأساسي المبسط
+          # 1. ملف الإعدادات الأساسي
           cat << 'EOF' > settings.gradle
           include ':app'
           EOF
 
-          # 2. ملف البناء الرئيسي للمشروع
+          # 2. ملف البناء الرئيسي للمشروع بصيغة كلاسيكية ومستقرة
           cat << 'EOF' > build.gradle
           buildscript {
               repositories {
@@ -41,7 +41,7 @@ jobs:
           }
           EOF
 
-          # 3. ملف بناء التطبيق بصياغة كلاسيكية آمنة ومستقرة 100%
+          # 3. ملف بناء التطبيق مع تعديل المكتبات لمنع أي تعارض
           cat << 'EOF' > app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'kotlin-android'
@@ -73,7 +73,7 @@ jobs:
               implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
               implementation 'androidx.activity:activity-compose:1.8.2'
               
-              // حزمة مكتبات الكومبوز المستقرة بدون مصفوفات معقدة
+              // مكتبات الكومبوز المستقرة
               implementation 'androidx.compose.ui:ui:1.4.3'
               implementation 'androidx.compose.ui:ui-graphics:1.4.3'
               implementation 'androidx.compose.ui:ui-tooling-preview:1.4.3'
@@ -84,19 +84,19 @@ jobs:
           }
           EOF
 
-          # 4. ملف الثيمات
+          # 4. ملف الثيمات لمنع الكراش
           cat << 'EOF' > app/src/main/res/values/themes.xml
           <resources></resources>
           EOF
 
-          # 5. نقل ملف الكود الحقيقي إلى مساره البرمجي الصحيح
+          # 5. نقل الكود الفعلي والتأكد من مطابقة اسم الملف
           if [ -f "MainActivity.kt" ]; then
             cp MainActivity.kt app/src/main/java/com/videoeditpro/app/MainActivity.kt
           elif [ -f "MainActivity.kt.kt" ]; then
             cp MainActivity.kt.kt app/src/main/java/com/videoeditpro/app/MainActivity.kt
           fi
 
-          # 6. ملف المانيفست المدمج به كود الربح الحقيقي لحسابك الشخصي
+          # 6. ملف المانيفست المدمج به كود الربح الحقيقي لحسابك
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.videoeditpro.app">
               <uses-permission android:name="android.permission.INTERNET"/>
@@ -122,12 +122,13 @@ jobs:
           </manifest>
           EOF
 
+          # إجبار السيرفر على استخدام إصدار Wrapper محدد يتوافق مع ملف البناء
           gradle wrapper --gradle-version 8.0.2
 
       - name: Build Official Production APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
