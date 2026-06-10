@@ -5,98 +5,106 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           
-      - name: Create Clean Android Structure
+      - name: Build Android Structure
         run: |
+          # إنشاء مجلدات الكود والثيمات في المسار الرئيسي المباشر
           mkdir -p app/src/main/java/com/videoeditpro/app
           mkdir -p app/src/main/res/values
           
           # 1. ملف الإعدادات الأساسي
-          cat << 'EOF' > settings.gradle
-          include ':app'
-          EOF
-
-          # 2. ملف البناء الرئيسي للمشروع بصيغة كلاسيكية ومستقرة
-          cat << 'EOF' > build.gradle
-          buildscript {
+          cat << 'EOF' > settings.gradle.kts
+          pluginManagement {
               repositories {
                   google()
                   mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.0.2'
-                  classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20'
+                  gradlePluginPortal()
               }
           }
-          allprojects {
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
               repositories {
                   google()
                   mavenCentral()
               }
           }
+          rootProject.name = "VideoEditPro"
+          include(":app")
           EOF
 
-          # 3. ملف بناء التطبيق مع تعديل المكتبات لمنع أي تعارض
-          cat << 'EOF' > app/build.gradle
-          apply plugin: 'com.android.application'
-          apply plugin: 'kotlin-android'
+          # 2. ملف البناء الرئيسي للمشروع (Root)
+          cat << 'EOF' > build.gradle.kts
+          plugins {
+              id("com.android.application") version "8.1.1" apply false
+              id("org.jetbrains.kotlin.android") version "1.8.10" apply false
+          }
+          EOF
 
+          # 3. ملف بناء موديول التطبيق (App) بصيغة Kotlin Script المتوافقة تماماً
+          cat << 'EOF' > app/build.gradle.kts
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
           android {
-              namespace 'com.videoeditpro.app'
-              compileSdk 34
+              namespace = "com.videoeditpro.app"
+              compileSdk = 34
               defaultConfig {
-                  applicationId "com.videoeditpro.app"
-                  minSdk 24
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
+                  applicationId = "com.videoeditpro.app"
+                  minSdk = 24
+                  targetSdk = 34
+                  versionCode = 1
+                  versionName = "1.0"
               }
-              buildFeatures {
-                  compose true
-              }
-              composeOptions {
-                  kotlinCompilerExtensionVersion '1.4.6'
+              buildTypes {
+                  release {
+                      isMinifyEnabled = false
+                      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+                  }
               }
               compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
               }
+              kotlinOptions { jvmTarget = "17" }
+              buildFeatures { compose = true }
+              composeOptions { kotlinCompilerExtensionVersion = "1.4.3" }
           }
-
           dependencies {
-              implementation 'androidx.core:core-ktx:1.12.0'
-              implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
-              implementation 'androidx.activity:activity-compose:1.8.2'
+              implementation("androidx.core:core-ktx:1.12.0")
+              implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+              implementation("androidx.activity:activity-compose:1.8.2")
               
-              // مكتبات الكومبوز المستقرة
-              implementation 'androidx.compose.ui:ui:1.4.3'
-              implementation 'androidx.compose.ui:ui-graphics:1.4.3'
-              implementation 'androidx.compose.ui:ui-tooling-preview:1.4.3'
-              implementation 'androidx.compose.material3:material3:1.1.1'
+              // مكتبات الكومبوز المستقرة والنظيفة
+              implementation("androidx.compose.ui:ui:1.4.3")
+              implementation("androidx.compose.ui:ui-graphics:1.4.3")
+              implementation("androidx.compose.ui:ui-tooling-preview:1.4.3")
+              implementation("androidx.compose.material3:material3:1.1.1")
               
-              // مكتبة إعلانات AdMob الرسمية لحسابك
-              implementation 'com.google.android.gms:play-services-ads:23.0.0'
+              // مكتبة إعلانات AdMob الرسمية الخاصة بحسابك
+              implementation("com.google.android.gms:play-services-ads:23.0.0")
           }
           EOF
 
-          # 4. ملف الثيمات لمنع الكراش
+          # 4. ملف قيم الثيمات لمنع كراش الـ Resources
           cat << 'EOF' > app/src/main/res/values/themes.xml
           <resources></resources>
           EOF
 
-          # 5. نقل الكود الفعلي والتأكد من مطابقة اسم الملف
+          # 5. نقل كود الـ MainActivity الحقيقي إلى مساره الصحيح داخلياً
           if [ -f "MainActivity.kt" ]; then
             cp MainActivity.kt app/src/main/java/com/videoeditpro/app/MainActivity.kt
           elif [ -f "MainActivity.kt.kt" ]; then
             cp MainActivity.kt.kt app/src/main/java/com/videoeditpro/app/MainActivity.kt
           fi
 
-          # 6. ملف المانيفست المدمج به كود الربح الحقيقي لحسابك
+          # 6. ملف المانيفست الرسمي مدمجاً به كود ربح حسابك
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.videoeditpro.app">
               <uses-permission android:name="android.permission.INTERNET"/>
@@ -122,13 +130,13 @@ jobs:
           </manifest>
           EOF
 
-          # إجبار السيرفر على استخدام إصدار Wrapper محدد يتوافق مع ملف البناء
-          gradle wrapper --gradle-version 8.0.2
+          # توليد الـ Wrapper في المجلد الرئيسي مباشرة لحل مشكلة الضياع
+          gradle wrapper --gradle-version 8.1.1
 
       - name: Build Official Production APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
