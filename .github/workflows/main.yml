@@ -1,0 +1,77 @@
+name: Build VideoEdit Pro APK
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Initialize Android Project
+        run: |
+          mkdir -p app/src/main/java/com/videoeditpro/app
+          mkdir -p app/src/main
+          mv MainActivity.kt app/src/main/java/com/videoeditpro/app/
+          
+          # إنشاء ملف المانيفست بالخلفية وإضافة معرف إعلاناتك الحقيقي
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.videoeditpro.app">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <application android:label="VideoEdit Pro" android:theme="@android:style/Theme.Material.NoActionBar">
+                  <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-8995513369904529~8169198851"/>
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # إنشاء ملفات الإعدادات والتحميل للسيرفر بشكل كامل
+          echo "include(':app')" > settings.gradle.kts
+          cat << 'EOF' > build.gradle.kts
+          plugins {
+              id("com.android.application") version "8.1.1" apply false
+              id("org.jetbrains.kotlin.android") version "1.8.10" apply false
+          }
+          EOF
+
+          cat << 'EOF' > app/build.gradle.kts
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
+          android {
+              namespace = "com.videoeditpro.app"
+              compileSdk = 34
+              defaultConfig {
+                  applicationId = "com.videoeditpro.app"
+                  minSdk = 24
+                  targetSdk = 34
+                  versionCode = 1
+                  versionName = "1.0"
+              }
+              buildFeatures { compose = true }
+              composeOptions { kotlinCompilerExtensionVersion = "1.4.3" }
+          }
+          dependencies {
+              implementation("androidx.activity:activity-compose:1.8.2")
+              implementation("androidx.compose.ui:ui:1.5.4")
+              implementation("androidx.compose.material3:material3:1.1.2")
+              implementation("com.google.android.gms:play-services-ads:23.0.0")
+          }
+          EOF
+          
+          gradle wrapper --gradle-version 8.0
+      - name: Build APK Succeeded
+        run: ./gradlew assembleDebug
+      - name: Upload Finished APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VideoEditPro-Official-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
